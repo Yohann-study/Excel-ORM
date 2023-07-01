@@ -6,6 +6,7 @@ import com.alibaba.excel.annotation.ExcelProperty;
 import com.alibaba.excel.annotation.format.DateTimeFormat;
 import com.alibaba.excel.support.ExcelTypeEnum;
 import com.alibaba.excel.util.DateUtils;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.poifs.filesystem.FileMagic;
 import org.apache.poi.ss.usermodel.Cell;
@@ -14,12 +15,12 @@ import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.yohann.excel.annotation.ExcelFile;
-import org.yohann.excel.query.Criteria;
 import org.yohann.excel.entity.Excel;
 import org.yohann.excel.io.CopyFileInputStream;
 import org.yohann.excel.io.ReplaceFileOutputStream;
 import org.yohann.excel.listener.DataListener;
 import org.yohann.excel.listener.HeaderListener;
+import org.yohann.excel.query.Criteria;
 
 import java.io.*;
 import java.lang.reflect.Field;
@@ -28,6 +29,8 @@ import java.lang.reflect.Type;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static com.alibaba.excel.support.ExcelTypeEnum.XLS;
+import static com.alibaba.excel.support.ExcelTypeEnum.XLSX;
 import static org.apache.poi.poifs.filesystem.FileMagic.OOXML;
 
 /**
@@ -35,6 +38,7 @@ import static org.apache.poi.poifs.filesystem.FileMagic.OOXML;
  *
  * @param <T> The type of the Excel object that this mapper handles.
  */
+@Slf4j
 public abstract class AbstractExcelMapper<T extends Excel> implements ExcelMapper<T> {
 
     /**
@@ -85,29 +89,32 @@ public abstract class AbstractExcelMapper<T extends Excel> implements ExcelMappe
                                 throw new IllegalArgumentException("file name must be not contains directory");
                             }
                             // Make sure the file type is either XLS or XLSX
-                            if ((!name.endsWith(ExcelTypeEnum.XLS.getValue()) && !name.endsWith(ExcelTypeEnum.XLSX.getValue()))) {
+                            if ((!name.endsWith(XLS.getValue()) && !name.endsWith(XLSX.getValue()))) {
                                 throw new IllegalArgumentException("file type must be either XLS or XLSX");
                             }
                             return name;
                         })
-                        .orElse(clazz.getSimpleName() + ExcelTypeEnum.XLSX.getValue());
+                        .orElse(clazz.getSimpleName() + XLSX.getValue());
                 // Combine the path and filename into a full file path
-                String filePath = path.equals("") ? filename : path.contains("/") ? path + "/" + filename : path + "\\" + filename;
-                File directory = new File(path);
-                File file = new File(filePath);
-                // If the file does not exist, create a new Excel file with the header row
-                if (!file.exists()) {
-                    directory.mkdirs();
-                    file.createNewFile();
-                    EasyExcel.write(file)
-                            .head(clazz)
-                            .sheet()
-                            .doWrite(Collections.emptyList());
-                }
+                String filePath = path.equals("") ? filename : path + "/" + filename;
 
                 // Set the class and file path variables
                 this._class = clazz;
                 this._filePath = filePath;
+
+                File directory = new File(path);
+                File file = new File(filePath);
+                // If the file does not exist, create a new Excel file with the header row
+                if (!file.exists() && directory.mkdirs()) {
+                    if (file.createNewFile()) {
+                        EasyExcel.write(file)
+                                .head(_class)
+                                .excelType(filePath.endsWith(XLS.getValue()) ? XLS : XLSX)
+                                .sheet()
+                                .doWrite(Collections.emptyList());
+                        log.info("created file: " + filePath);
+                    }
+                }
             } catch (ClassNotFoundException | IOException e) {
                 throw new IllegalArgumentException(e.getMessage(), e);
             }
@@ -147,7 +154,7 @@ public abstract class AbstractExcelMapper<T extends Excel> implements ExcelMappe
             // Write the updated workbook back to the Excel file
             workbook.write(out);
         } catch (Exception e) {
-            throw new RuntimeException("insert failed", e);
+            throw new RuntimeException("insert failed, filename: " + _filePath, e);
         }
     }
 
@@ -165,7 +172,7 @@ public abstract class AbstractExcelMapper<T extends Excel> implements ExcelMappe
             // Write the updated workbook back to the Excel file
             workbook.write(out);
         } catch (Exception e) {
-            throw new RuntimeException("update failed", e);
+            throw new RuntimeException("update failed, filename: " + _filePath, e);
         }
     }
 
@@ -179,16 +186,14 @@ public abstract class AbstractExcelMapper<T extends Excel> implements ExcelMappe
             Row row = sheet.getRow(rowNum - 1);
             // Remove the row and shift the remaining rows up
             sheet.removeRow(row);
-            if (rowNum < sheet.getLastRowNum()) {
-                sheet.shiftRows(rowNum, sheet.getLastRowNum(), -1);
-            } else {
-                Row lastRow = sheet.getRow(sheet.getLastRowNum());
-                sheet.removeRow(lastRow);
+            int lastRowNum = sheet.getLastRowNum();
+            if (rowNum - 1 < lastRowNum) {
+                sheet.shiftRows(rowNum, lastRowNum, -1);
             }
             // Write the updated workbook back to the Excel file
             workbook.write(out);
         } catch (Exception e) {
-            throw new RuntimeException("delete failed", e);
+            throw new RuntimeException("delete failed, filename: " + _filePath, e);
         }
     }
 
@@ -224,7 +229,7 @@ public abstract class AbstractExcelMapper<T extends Excel> implements ExcelMappe
             String headerName = Optional.ofNullable(field.getAnnotation(ExcelProperty.class))
                     .map(excelProperty -> {
                         String value = excelProperty.value()[0];
-                        return value.equals("") ? null : value;
+                        return "".equals(value) ? null : value;
                     })
                     .orElse(field.getName());
             // Get the column index for the header name of this field

@@ -1,9 +1,8 @@
 package org.yohann.excel.io;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import org.apache.poi.util.IOUtils;
+
+import java.io.*;
 
 /**
  * The ReplaceFileOutputStream class extends FileOutputStream and replaces the original file
@@ -11,6 +10,8 @@ import java.io.IOException;
  * file is renamed to the original file name.
  */
 public class ReplaceFileOutputStream extends FileOutputStream {
+
+    private static final String SUFFIX = ".copy";
 
     /**
      * The name of the original file.
@@ -38,10 +39,13 @@ public class ReplaceFileOutputStream extends FileOutputStream {
     @Override
     public void close() throws IOException {
         super.close();
-        File file = new File(fileName);
-        file.delete();
-        File newFile = new File(fileName + ".copy");
-        newFile.renameTo(file);
+        String tempFilename = fileName + SUFFIX;
+        try (FileInputStream in = new FileInputStream(tempFilename);
+             FileOutputStream out = new FileOutputStream(fileName)) {
+            IOUtils.copy(in, out);
+        }
+        File tempFile = new File(tempFilename);
+        tempFile.delete();
     }
 
     /**
@@ -53,6 +57,13 @@ public class ReplaceFileOutputStream extends FileOutputStream {
      * @throws FileNotFoundException if the specified file cannot be opened for writing
      */
     public static ReplaceFileOutputStream create(String fileName) throws FileNotFoundException {
+        String tempFilename = fileName + SUFFIX;
+        try (FileInputStream in = new FileInputStream(fileName);
+             FileOutputStream out = new FileOutputStream(tempFilename)) {
+            IOUtils.copy(in, out);
+        } catch (Exception e) {
+            throw new RuntimeException("create CopyFileInputStream failed", e);
+        }
         return new ReplaceFileOutputStream(fileName);
     }
 
