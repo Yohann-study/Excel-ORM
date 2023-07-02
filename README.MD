@@ -15,7 +15,7 @@ In the `pom.xml` file, add the following dependency:
 <dependency>
     <groupId>org.yohann.excel</groupId>
     <artifactId>excel-orm</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.0.1</version>
 </dependency>
 ```
 
@@ -172,7 +172,7 @@ Excel-ORM 是一个基于 EasyExcel 的 Java 实用工具类，用于读写 Exce
 <dependency>
     <groupId>org.yohann.excel</groupId>
     <artifactId>excel-orm</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.0.1</version>
 </dependency>
 ```
 

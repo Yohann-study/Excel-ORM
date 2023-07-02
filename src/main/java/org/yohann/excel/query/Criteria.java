@@ -33,6 +33,30 @@ public class Criteria {
     }
 
     /**
+     * Adds a Matcher to the Criteria object that matches the given field name and value using a equals matching algorithm.
+     *
+     * @param fieldName the name of the field to match
+     * @param value     the value to match against
+     * @return the Criteria object itself, for method chaining
+     */
+    public Criteria equals(String fieldName, Object value) {
+        addMatcher(MatchTypeEnum.EQUALS, value, fieldName);
+        return this;
+    }
+
+    /**
+     * Adds a Matcher to the Criteria object that not matches the given field name and value using a equals matching algorithm.
+     *
+     * @param fieldName the name of the field to match
+     * @param value     the value to match against
+     * @return the Criteria object itself, for method chaining
+     */
+    public Criteria notEquals(String fieldName, Object value) {
+        addMatcher(MatchTypeEnum.NOT_EQUALS, value, fieldName);
+        return this;
+    }
+
+    /**
      * Adds a Matcher to the Criteria object that matches the given field name and value using a partial matching algorithm.
      * Only supports matching against String objects.
      *

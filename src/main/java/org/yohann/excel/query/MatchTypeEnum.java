@@ -13,7 +13,12 @@ public enum MatchTypeEnum {
     /**
      * Performs an exact match between the original and target objects.
      */
-    EQUALS(Object::equals, (o -> true)),
+    EQUALS(Objects::equals, (o -> true)),
+
+    /**
+     * Performs an not match between the original and target objects.
+     */
+    NOT_EQUALS((o,t)->!Objects.equals(o,t), (o -> true)),
 
     /**
      * Performs a partial match between the original and target objects, where the original object contains the target object as a substring.
