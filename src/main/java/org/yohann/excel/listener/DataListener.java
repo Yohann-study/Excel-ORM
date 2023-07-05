@@ -4,6 +4,7 @@ import com.alibaba.excel.context.AnalysisContext;
 import com.alibaba.excel.event.AnalysisEventListener;
 import com.alibaba.excel.read.metadata.holder.ReadRowHolder;
 import org.yohann.excel.entity.Excel;
+import org.yohann.excel.query.Criteria;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,6 +32,15 @@ public class DataListener<T extends Excel> extends AnalysisEventListener<T> {
         return dataList;
     }
 
+    private Criteria criteria;
+
+    public DataListener() {
+    }
+
+    public DataListener(Criteria criteria) {
+        this.criteria = criteria;
+    }
+
     /**
      * This method is called for each row of data in the Excel file. It adds the parsed data object to the dataList list
      * and sets its row number to the current row index.
@@ -43,7 +53,9 @@ public class DataListener<T extends Excel> extends AnalysisEventListener<T> {
         ReadRowHolder rowHolder = context.readRowHolder();
         Integer rowIndex = rowHolder.getRowIndex();
         data.setRowNum(rowIndex + 1);
-        dataList.add(data);
+        if (criteria == null || criteria.isMatch(data)) {
+            dataList.add(data);
+        }
     }
 
     /**

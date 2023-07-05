@@ -26,7 +26,6 @@ import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static com.alibaba.excel.support.ExcelTypeEnum.XLS;
 import static com.alibaba.excel.support.ExcelTypeEnum.XLSX;
@@ -136,10 +135,13 @@ public abstract class AbstractExcelMapper<T extends Excel> implements ExcelMappe
 
     @Override
     public synchronized List<T> get(Criteria criteria) {
-        return this.getAll()
-                .stream()
-                .filter(criteria::isMatch)
-                .collect(Collectors.toList());
+        DataListener<T> listener = new DataListener<>(criteria);
+        EasyExcel.read(_filePath)
+                .sheet()
+                .head(_class)
+                .registerReadListener(listener)
+                .doRead();
+        return listener.getDataList();
     }
 
     @Override
