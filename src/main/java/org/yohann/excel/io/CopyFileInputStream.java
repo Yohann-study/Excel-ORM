@@ -2,11 +2,9 @@ package org.yohann.excel.io;
 
 import org.apache.poi.util.IOUtils;
 
-import java.io.*;
-import java.util.UUID;
-
-import static com.alibaba.excel.support.ExcelTypeEnum.XLS;
-import static com.alibaba.excel.support.ExcelTypeEnum.XLSX;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 
 
 /**
@@ -16,9 +14,10 @@ import static com.alibaba.excel.support.ExcelTypeEnum.XLSX;
  */
 public class CopyFileInputStream extends FileInputStream {
 
-    /**
-     * The name of the temporary file where the copy of the input file is stored.
-     */
+    // The suffix for the temporary copy of the file
+    private static final String SUFFIX = ".read";
+
+    // The name of the temporary file containing the copied data
     private final String temporary;
 
     /**
@@ -33,18 +32,6 @@ public class CopyFileInputStream extends FileInputStream {
     }
 
     /**
-     * Closes the input stream and deletes the temporary file containing the copied data.
-     *
-     * @throws IOException if an I/O error occurs while closing the input stream
-     */
-    @Override
-    public void close() throws IOException {
-        super.close();
-        File file = new File(temporary);
-        file.delete();
-    }
-
-    /**
      * Creates a new CopyFileInputStream object for the specified file.
      * The file is copied to a temporary file before the input stream is created.
      *
@@ -53,14 +40,15 @@ public class CopyFileInputStream extends FileInputStream {
      * @throws FileNotFoundException if the file specified by the file name cannot be opened
      */
     public static FileInputStream create(String fileName) throws FileNotFoundException {
-        String suffix = fileName.endsWith(XLS.getValue()) ? XLS.getValue() : XLSX.getValue();
-        String tempFilename = UUID.randomUUID().toString().replace("-", "") + suffix;
+        // Create a temporary copy of the file
+        String tempFilename = fileName + SUFFIX;
         try (FileInputStream in = new FileInputStream(fileName);
              FileOutputStream out = new FileOutputStream(tempFilename)) {
             IOUtils.copy(in, out);
         } catch (Exception e) {
             throw new RuntimeException("create CopyFileInputStream failed", e);
         }
+        // Return a new CopyFileInputStream object for the specified file
         return new CopyFileInputStream(tempFilename);
     }
 

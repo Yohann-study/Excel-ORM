@@ -1,8 +1,9 @@
 package org.yohann.excel.mapper;
 
-import org.yohann.excel.query.Criteria;
 import org.yohann.excel.entity.Excel;
+import org.yohann.excel.query.Criteria;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -28,24 +29,50 @@ public interface ExcelMapper<T extends Excel> {
     List<T> get(Criteria criteria);
 
     /**
-     * Inserts a new object into the Excel file.
+     * Inserts one or more objects of the specified type into the Excel file.
      *
-     * @param t the object to be inserted
+     * @param t one or more objects of the specified type to insert
      */
-    void insert(T t);
+    default void insert(T... t) {
+        insertBatch(Arrays.asList(t));
+    }
 
     /**
-     * Updates an existing object in the Excel file.
+     * Inserts a list of objects of the specified type into the Excel file.
      *
-     * @param t the object to be updated
+     * @param list a list of objects of the specified type to insert
      */
-    void update(T t);
+    void insertBatch(List<T> list);
 
     /**
-     * Deletes an object at the specified row number from the Excel file.
+     * Updates one or more objects of the specified type in the Excel file.
      *
-     * @param rowNum the row number of the object to be deleted
+     * @param t one or more objects of the specified type to update
      */
-    void delete(Integer rowNum);
+    default void update(T... t) {
+        updateBatch(Arrays.asList(t));
+    }
 
+    /**
+     * Updates a list of objects of the specified type in the Excel file.
+     *
+     * @param list a list of objects of the specified type to update
+     */
+    void updateBatch(List<T> list);
+
+    /**
+     * Deletes one or more rows from the Excel file.
+     *
+     * @param rowNum one or more row numbers to delete
+     */
+    default void delete(Integer... rowNum) {
+        deleteBatch(Arrays.asList(rowNum));
+    }
+
+    /**
+     * Deletes a list of rows from the Excel file.
+     *
+     * @param rowNumList a list of row numbers to delete
+     */
+    void deleteBatch(List<Integer> rowNumList);
 }

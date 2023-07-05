@@ -2,7 +2,10 @@ package org.yohann.excel.io;
 
 import org.apache.poi.util.IOUtils;
 
-import java.io.*;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 
 /**
  * The ReplaceFileOutputStream class extends FileOutputStream and replaces the original file
@@ -11,11 +14,10 @@ import java.io.*;
  */
 public class ReplaceFileOutputStream extends FileOutputStream {
 
-    private static final String SUFFIX = ".copy";
+    // The suffix for the temporary copy of the file
+    private static final String SUFFIX = ".write";
 
-    /**
-     * The name of the original file.
-     */
+    // The name of the original file
     private final String fileName;
 
     /**
@@ -26,26 +28,27 @@ public class ReplaceFileOutputStream extends FileOutputStream {
      * @throws FileNotFoundException if the specified file cannot be opened for writing
      */
     private ReplaceFileOutputStream(String fileName) throws FileNotFoundException {
-        super(fileName + ".copy");
+        // Write to a temporary copy of the file
+        super(fileName + SUFFIX);
         this.fileName = fileName;
     }
 
     /**
-     * Closes the output stream and replaces the original file with the temporary copy.
-     * The original file is deleted and the temporary copy is renamed to the original file name.
+     * Closes the ReplaceFileOutputStream and replaces the original file with the temporary file.
+     * The contents of the temporary file are copied to the original file.
      *
-     * @throws IOException if an I/O error occurs while closing the output stream
+     * @throws IOException if an I/O error occurs while closing the output stream or copying the contents
+     *                     of the temporary file to the original file
      */
     @Override
     public void close() throws IOException {
         super.close();
+        // Copy the contents of the temporary file to the original file
         String tempFilename = fileName + SUFFIX;
         try (FileInputStream in = new FileInputStream(tempFilename);
              FileOutputStream out = new FileOutputStream(fileName)) {
             IOUtils.copy(in, out);
         }
-        File tempFile = new File(tempFilename);
-        tempFile.delete();
     }
 
     /**
@@ -57,6 +60,7 @@ public class ReplaceFileOutputStream extends FileOutputStream {
      * @throws FileNotFoundException if the specified file cannot be opened for writing
      */
     public static ReplaceFileOutputStream create(String fileName) throws FileNotFoundException {
+        // Create a temporary copy of the file
         String tempFilename = fileName + SUFFIX;
         try (FileInputStream in = new FileInputStream(fileName);
              FileOutputStream out = new FileOutputStream(tempFilename)) {
@@ -64,6 +68,7 @@ public class ReplaceFileOutputStream extends FileOutputStream {
         } catch (Exception e) {
             throw new RuntimeException("create CopyFileInputStream failed", e);
         }
+        // Return a new ReplaceFileOutputStream object for the specified file
         return new ReplaceFileOutputStream(fileName);
     }
 

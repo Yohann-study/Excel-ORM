@@ -4,7 +4,6 @@ import com.alibaba.excel.EasyExcel;
 import com.alibaba.excel.annotation.ExcelIgnore;
 import com.alibaba.excel.annotation.ExcelProperty;
 import com.alibaba.excel.annotation.format.DateTimeFormat;
-import com.alibaba.excel.support.ExcelTypeEnum;
 import com.alibaba.excel.util.DateUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
@@ -105,7 +104,10 @@ public abstract class AbstractExcelMapper<T extends Excel> implements ExcelMappe
                 File directory = new File(path);
                 File file = new File(filePath);
                 // If the file does not exist, create a new Excel file with the header row
-                if (!file.exists() && directory.mkdirs()) {
+                if (!file.exists()) {
+                    if (directory.mkdirs()) {
+                        log.info("created directory: " + directory);
+                    }
                     if (file.createNewFile()) {
                         EasyExcel.write(file)
                                 .head(_class)
@@ -141,16 +143,20 @@ public abstract class AbstractExcelMapper<T extends Excel> implements ExcelMappe
     }
 
     @Override
-    public synchronized void insert(T t) {
+    public synchronized void insertBatch(List<T> list) {
         try (InputStream in = new BufferedInputStream(CopyFileInputStream.create(_filePath));
              Workbook workbook = FileMagic.valueOf(in) == OOXML ? new XSSFWorkbook(in) : new HSSFWorkbook(in);
              OutputStream out = new BufferedOutputStream(ReplaceFileOutputStream.create(_filePath))) {
             // Get the sheet and last row number of the Excel file
             Sheet sheet = workbook.getSheetAt(0);
-            int lastRowNum = sheet.getLastRowNum();
-            // Create a new row and fill it with the values from the mapped object
-            Row row = sheet.createRow(lastRowNum + 1);
-            fillCell(t, row);
+
+            for (T t : list) {
+                int lastRowNum = sheet.getLastRowNum();
+                // Create a new row and fill it with the values from the mapped object
+                Row row = sheet.createRow(lastRowNum + 1);
+                fillCell(t, row);
+            }
+
             // Write the updated workbook back to the Excel file
             workbook.write(out);
         } catch (Exception e) {
@@ -159,16 +165,20 @@ public abstract class AbstractExcelMapper<T extends Excel> implements ExcelMappe
     }
 
     @Override
-    public synchronized void update(T t) {
+    public synchronized void updateBatch(List<T> list) {
         try (InputStream in = new BufferedInputStream(CopyFileInputStream.create(_filePath));
              Workbook workbook = FileMagic.valueOf(in) == OOXML ? new XSSFWorkbook(in) : new HSSFWorkbook(in);
              OutputStream out = new BufferedOutputStream(ReplaceFileOutputStream.create(_filePath))) {
             // Get the sheet and row number of the record to update
             Sheet sheet = workbook.getSheetAt(0);
-            Integer rowNum = t.getRowNum();
-            Row row = sheet.getRow(rowNum - 1);
-            // Fill the row with the updated values from the mapped object
-            fillCell(t, row);
+
+            for (T t : list) {
+                Integer rowNum = t.getRowNum();
+                Row row = sheet.getRow(rowNum - 1);
+                // Fill the row with the updated values from the mapped object
+                fillCell(t, row);
+            }
+
             // Write the updated workbook back to the Excel file
             workbook.write(out);
         } catch (Exception e) {
@@ -177,19 +187,23 @@ public abstract class AbstractExcelMapper<T extends Excel> implements ExcelMappe
     }
 
     @Override
-    public synchronized void delete(Integer rowNum) {
+    public synchronized void deleteBatch(List<Integer> rowNumList) {
         try (InputStream in = new BufferedInputStream(CopyFileInputStream.create(_filePath));
              Workbook workbook = FileMagic.valueOf(in) == OOXML ? new XSSFWorkbook(in) : new HSSFWorkbook(in);
              OutputStream out = new BufferedOutputStream(ReplaceFileOutputStream.create(_filePath))) {
             // Get the sheet and row of the record to delete
             Sheet sheet = workbook.getSheetAt(0);
-            Row row = sheet.getRow(rowNum - 1);
-            // Remove the row and shift the remaining rows up
-            sheet.removeRow(row);
-            int lastRowNum = sheet.getLastRowNum();
-            if (rowNum - 1 < lastRowNum) {
-                sheet.shiftRows(rowNum, lastRowNum, -1);
+
+            for (Integer rowNum : rowNumList) {
+                Row row = sheet.getRow(rowNum - 1);
+                // Remove the row and shift the remaining rows up
+                sheet.removeRow(row);
+                int lastRowNum = sheet.getLastRowNum();
+                if (rowNum - 1 < lastRowNum) {
+                    sheet.shiftRows(rowNum, lastRowNum, -1);
+                }
             }
+
             // Write the updated workbook back to the Excel file
             workbook.write(out);
         } catch (Exception e) {
