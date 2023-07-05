@@ -5,39 +5,82 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * A class representing a set of criteria used to match objects based on the values of their fields.
- * A Criteria object contains a list of Matcher objects, each of which specifies a field to match and the criteria for that matching.
+ * Criteria object used to filter Excel data based on specific conditions.
  */
 public class Criteria {
 
-    /**
-     * The list of Matcher objects that define the criteria for matching.
-     */
+    // Number of rows to skip
+    private Integer skip = 0;
+
+    // Maximum number of rows to read
+    private Integer limit = -1;
+
+    // List of Matchers used to filter the data
     private final List<Matcher> matchers = new ArrayList<>();
 
     /**
-     * Constructs a new empty Criteria object.
+     * Constructs a new Criteria object with default values.
      */
     public Criteria() {
 
     }
 
     /**
-     * Constructs a new Criteria object with a single Matcher that matches the given field name and value exactly.
+     * Gets the number of rows to skip.
+     *
+     * @return the number of rows to skip
+     */
+    public Integer getSkip() {
+        return skip;
+    }
+
+    /**
+     * Sets the number of rows to skip.
+     *
+     * @param skip the number of rows to skip
+     * @return this Criteria object
+     */
+    public Criteria setSkip(Integer skip) {
+        this.skip = skip;
+        return this;
+    }
+
+    /**
+     * Gets the maximum number of rows to read.
+     *
+     * @return the maximum number of rows to read
+     */
+    public Integer getLimit() {
+        return limit;
+    }
+
+    /**
+     * Sets the maximum number of rows to read.
+     *
+     * @param limit the maximum number of rows to read
+     * @return this Criteria object
+     */
+    public Criteria setLimit(Integer limit) {
+        this.limit = limit;
+        return this;
+    }
+
+    /**
+     * Constructs a new Criteria object with a single Matcher.
      *
      * @param fieldName the name of the field to match
-     * @param value     the value to match against
+     * @param value     the value to match
      */
     public Criteria(String fieldName, Object value) {
         matchers.add(new Matcher(fieldName, value));
     }
 
     /**
-     * Adds a Matcher to the Criteria object that matches the given field name and value using a equals matching algorithm.
+     * Adds an EQUALS Matcher to the Criteria object.
      *
      * @param fieldName the name of the field to match
-     * @param value     the value to match against
-     * @return the Criteria object itself, for method chaining
+     * @param value     the value to match
+     * @return this Criteria object
      */
     public Criteria equals(String fieldName, Object value) {
         addMatcher(MatchTypeEnum.EQUALS, value, fieldName);
@@ -45,11 +88,11 @@ public class Criteria {
     }
 
     /**
-     * Adds a Matcher to the Criteria object that not matches the given field name and value using a equals matching algorithm.
+     * Adds a NOT_EQUALS Matcher to the Criteria object.
      *
      * @param fieldName the name of the field to match
-     * @param value     the value to match against
-     * @return the Criteria object itself, for method chaining
+     * @param value     the value to match
+     * @return this Criteria object
      */
     public Criteria notEquals(String fieldName, Object value) {
         addMatcher(MatchTypeEnum.NOT_EQUALS, value, fieldName);
@@ -57,12 +100,11 @@ public class Criteria {
     }
 
     /**
-     * Adds a Matcher to the Criteria object that matches the given field name and value using a partial matching algorithm.
-     * Only supports matching against String objects.
+     * Adds a LIKE Matcher to the Criteria object.
      *
      * @param fieldName the name of the field to match
-     * @param value     the value to match against
-     * @return the Criteria object itself, for method chaining
+     * @param value     the value to match
+     * @return this Criteria object
      */
     public Criteria like(String fieldName, Object value) {
         addMatcher(MatchTypeEnum.LIKE, value, fieldName);
@@ -70,12 +112,11 @@ public class Criteria {
     }
 
     /**
-     * Adds a Matcher to the Criteria object that matches the given field name and value using a less-than comparison.
-     * Only supports matching against Number and Date objects.
+     * Adds a LESS Matcher to the Criteria object.
      *
      * @param fieldName the name of the field to match
-     * @param value     the value to match against
-     * @return the Criteria object itself, for method chaining
+     * @param value     the value to match
+     * @return this Criteria object
      */
     public Criteria less(String fieldName, Object value) {
         addMatcher(MatchTypeEnum.LESS, value, fieldName);
@@ -83,12 +124,11 @@ public class Criteria {
     }
 
     /**
-     * Adds a Matcher to the Criteria object that matches the given field name and value using a less-than-or-equal-to comparison.
-     * Only supports matching against Number and Date objects.
+     * Adds a LESS_EQUALS Matcher to the Criteria object.
      *
      * @param fieldName the name of the field to match
-     * @param value     the value to match against
-     * @return the Criteria object itself, for method chaining
+     * @param value     the value to match
+     * @return this Criteria object
      */
     public Criteria lessEquals(String fieldName, Object value) {
         addMatcher(MatchTypeEnum.LESS_EQUALS, value, fieldName);
@@ -96,12 +136,11 @@ public class Criteria {
     }
 
     /**
-     * Adds a Matcher to the Criteria object that matches the given field name and value using a greater-than comparison.
-     * Only supports matching against Number and Date objects.
+     * Adds a GREATER Matcher to the Criteria object.
      *
      * @param fieldName the name of the field to match
-     * @param value     the value to match against
-     * @return the Criteria object itself, for method chaining
+     * @param value     the value to match
+     * @return this Criteria object
      */
     public Criteria greater(String fieldName, Object value) {
         addMatcher(MatchTypeEnum.GREATER, value, fieldName);
@@ -109,12 +148,11 @@ public class Criteria {
     }
 
     /**
-     * Adds a Matcher to the Criteria object that matches the given field name and value using a greater-than-or-equal-to comparison.
-     * Only supports matching against Number and Date objects.
+     * Adds a GREATER_EQUALS Matcher to the Criteria object.
      *
      * @param fieldName the name of the field to match
-     * @param value     the value to match against
-     * @return the Criteria object itself, for method chaining
+     * @param value     the value to match
+     * @return this Criteria object
      */
     public Criteria greaterEquals(String fieldName, Object value) {
         addMatcher(MatchTypeEnum.GREATER_EQUALS, value, fieldName);
@@ -122,12 +160,11 @@ public class Criteria {
     }
 
     /**
-     * Adds a Matcher to the Criteria object that matches fields that are null.
-     * Supports matching against any object type.
+     * Adds a NULL Matcher to the Criteria object.
      *
      * @param fieldName the name of the field to match
-     * @param value     the value to match against (ignored)
-     * @return the Criteria object itself, for method chaining
+     * @param value     the value to match
+     * @return this Criteria object
      */
     public Criteria isNUll(String fieldName, Object value) {
         addMatcher(MatchTypeEnum.NULL, value, fieldName);
@@ -135,12 +172,11 @@ public class Criteria {
     }
 
     /**
-     * Adds a Matcher to the Criteria object that matches fields that are not null.
-     * Supports matching against any object type.
+     * Adds a NOT_NULL Matcher to the Criteria object.
      *
      * @param fieldName the name of the field to match
-     * @param value     the value to match against (ignored)
-     * @return the Criteria object itself, for method chaining
+     * @param value     the value to match
+     * @return this Criteria object
      */
     public Criteria notNull(String fieldName, Object value) {
         addMatcher(MatchTypeEnum.NOT_NULL, value, fieldName);
@@ -148,11 +184,10 @@ public class Criteria {
     }
 
     /**
-     * Adds a new Matcher object to the Criteria object with the given match type, value, and field name.
-     * Throws a RuntimeException if the given value is not supported by the given match type.
+     * Adds a new Matcher to the Criteria object.
      *
-     * @param matchType the type of matching to perform
-     * @param value     the value to match against
+     * @param matchType the type of Matcher to add
+     * @param value     the value to match
      * @param fieldName the name of the field to match
      */
     private void addMatcher(MatchTypeEnum matchType, Object value, String fieldName) {
@@ -164,15 +199,10 @@ public class Criteria {
     }
 
     /**
-     * Determines whether the given object matches all the criteria specified by the Criteria object.
-     * <p>
-     * For each Matcher in the Criteria object, this method retrieves the field with the matching field name from the given object.
-     * If the field value is null and the Matcher's match type is not MatchTypeEnum.NULL, this method returns false.
-     * Otherwise, this method calls the Matcher's match method with the retrieved field value and the Matcher's match value.
-     * If any Matcher returns false, this method returns false. Otherwise, it returns true.
+     * Checks if the given object matches all the Matchers in this Criteria object.
      *
-     * @param value the object to match against
-     * @return true if the object matches all the criteria, false otherwise
+     * @param value the object to match
+     * @return true if the object matches all the Matchers in this Criteria object, false otherwise
      */
     public boolean isMatch(Object value) {
         // Get the class of the given object
@@ -211,5 +241,4 @@ public class Criteria {
                     return matchType.getMatch().match(fieldValue, matchValue);
                 });
     }
-
 }

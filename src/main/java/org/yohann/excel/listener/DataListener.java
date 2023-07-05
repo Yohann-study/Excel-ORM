@@ -2,6 +2,7 @@ package org.yohann.excel.listener;
 
 import com.alibaba.excel.context.AnalysisContext;
 import com.alibaba.excel.event.AnalysisEventListener;
+import com.alibaba.excel.exception.ExcelAnalysisStopException;
 import com.alibaba.excel.read.metadata.holder.ReadRowHolder;
 import org.yohann.excel.entity.Excel;
 import org.yohann.excel.query.Criteria;
@@ -9,59 +10,90 @@ import org.yohann.excel.query.Criteria;
 import java.util.ArrayList;
 import java.util.List;
 
-
 /**
- * This class is a listener for parsing Excel files. It extends the AnalysisEventListener class and is parameterized
- * with a type T that extends the Excel class.
+ * Event listener for reading Excel data using EasyExcel library.
  *
- * @param <T> the type of data to be parsed from the Excel file
+ * @param <T> the type of Excel data to read
  */
 public class DataListener<T extends Excel> extends AnalysisEventListener<T> {
 
-    /**
-     * The list that holds the parsed data objects.
-     */
+    // A list to store the data read from the Excel file
     private final List<T> dataList = new ArrayList<T>();
 
     /**
-     * Returns the list of parsed data objects.
+     * Gets the list of data read from the Excel file.
      *
-     * @return the list of parsed data objects
+     * @return the list of data read from the Excel file
      */
     public List<T> getDataList() {
         return dataList;
     }
 
+    // Criteria object used to filter the data
     private Criteria criteria;
 
+    // Number of rows to skip
+    private Integer skip;
+
+    // Maximum number of rows to read
+    private Integer limit;
+
+    /**
+     * Constructs a new DataListener with no filtering criteria.
+     */
     public DataListener() {
     }
 
+    /**
+     * Constructs a new DataListener with the specified filtering criteria.
+     *
+     * @param criteria the Criteria object used to filter the data
+     */
     public DataListener(Criteria criteria) {
         this.criteria = criteria;
+        this.skip = criteria.getSkip();
+        this.limit = criteria.getLimit();
     }
 
     /**
-     * This method is called for each row of data in the Excel file. It adds the parsed data object to the dataList list
-     * and sets its row number to the current row index.
+     * Invoked for every row of data read from the Excel file.
      *
-     * @param data    the data to be parsed from the Excel file
-     * @param context the context object for the parsing operation
+     * @param data    the data read from the Excel file
+     * @param context the analysis context
      */
     @Override
     public void invoke(T data, AnalysisContext context) {
+        // Get the index of the current row
         ReadRowHolder rowHolder = context.readRowHolder();
         Integer rowIndex = rowHolder.getRowIndex();
+
+        // Set the row number to the current row index + 1
         data.setRowNum(rowIndex + 1);
-        if (criteria == null || criteria.isMatch(data)) {
+
+        if (criteria == null) {
+            // If no criteria is specified, add all data to the list
             dataList.add(data);
+        } else if (criteria.isMatch(data)) {
+            // If the data matches the criteria, add it to the list
+            if (skip > 0) {
+                skip--;
+            } else if (limit == 0) {
+                dataList.add(data);
+            } else {
+                dataList.add(data);
+                limit--;
+                if (limit < 1) {
+                    // Stop reading the Excel file if the maximum number of rows has been reached
+                    throw new ExcelAnalysisStopException("reading completed");
+                }
+            }
         }
     }
 
     /**
-     * This method is called after all data has been parsed from the Excel file. It does nothing in this implementation.
+     * Invoked after all data has been read from the Excel file.
      *
-     * @param context the context object for the parsing operation
+     * @param context the analysis context
      */
     @Override
     public void doAfterAllAnalysed(AnalysisContext context) {
